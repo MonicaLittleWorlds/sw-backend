@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\avatarSpaces;
@@ -50,6 +51,26 @@ class SpaceSettingsController extends Controller
         }
 
         return response()->json($this->metaPayload($space));
+    }
+
+    /** Read-only capability for the concert relay; control leases stay in multiplayer. */
+    public function concertPermission(Request $request, $id, $itemId)
+    {
+        $space = avatarSpaces::find($id);
+        if (!$space) return response()->json(['error' => 'Space not found'], 404);
+        if (strlen((string) $itemId) > 128) return response()->json(['error' => 'Invalid item'], 400);
+        $user = Auth::user();
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
+        $owner = (string) $space->user_id === (string) $user->id;
+        // Match this repository's owner-only management policy. A currently
+        // leased DJ may still publish through the server's shared-music check.
+        $validSource = DB::table('avatar_items')->where('space_id', $space->id)
+            ->where('item_id', (string) $itemId)->where('model_id', 2026100702)->exists();
+        return response()->json([
+            'spaceId' => (string) $space->id,
+            'validSource' => $validSource,
+            'canEdit' => $owner,
+        ])->header('Cache-Control', 'no-store');
     }
 
     // ── Write: general + theme/decor + security ─────────────────────────

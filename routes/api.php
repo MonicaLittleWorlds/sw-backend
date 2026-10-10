@@ -156,6 +156,7 @@ Route::group(['middleware' => ['swHeader']], function ()
     Route::get('/spaces/popular', [SpaceController::class, 'popSpaces']);
 
     // ── Space settings editor (owner-only; controller enforces ownership) ──
+    Route::get('/spaces/{id}/concert-permission/{itemId}', [SpaceSettingsController::class, 'concertPermission']);
     Route::get('/spaces/{id}/meta',              [SpaceSettingsController::class, 'meta']);
     Route::patch('/spaces/{id}',                 [SpaceSettingsController::class, 'update']);
     Route::get('/spaces/{id}/members',           [SpaceSettingsController::class, 'members']);
